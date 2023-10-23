@@ -1,0 +1,121 @@
+---
+title: "AREC 570 - Reproducibility Exercise"
+author: "Caleb Axlund"
+date: "2023-10-23"
+output: html_document
+---
+```{r}
+install.packages("usethis")
+install.packages("readxl")
+install.packages("dplyr")
+install.packages("ggplot2")
+```
+
+```{r}
+library(usethis)
+library(readxl)
+library(dplyr)
+library(ggplot2)
+```
+
+```{r}
+setwd("C:/Users/ceaxl/Documents/backups/R Projects/AREC 570 - Reproducibility/AREC570-ReproducibilityAxlund")
+# Download the Zipped Data and Set Directory Structure #
+zipped_data <- "https://jbayham.github.io/AREC570/reproducibility/data/data.zip"
+reprod_dir <- "C:/Users/ceaxl/Documents/backups/R Projects/AREC 570 - Reproducibility/AREC570-ReproducibilityAxlund"
+input_dir <- file.path(reprod_dir, "inputs")
+
+
+```
+
+```{r}
+# Create the Directory Structure #
+if (!dir.exists(input_dir)) {
+  dir.create(input_dir, recursive = TRUE)
+}
+
+```
+
+```{r}
+## Download and Unzip Data from URL ##
+
+#First Download Data #
+temporary_zip <- tempfile(fileext = ".zip")
+download.file(zipped_data, destfile = temporary_zip, mode = "wb")
+
+# Unzip the Data #
+unzip(temporary_zip, exdir = input_dir)
+
+# Remove the Temporary File #
+unlink(temporary_zip)
+
+```
+```{r}
+## Using the Data ##
+
+country_data_file <- file.path(input_dir, "gdp_52-67.csv")
+
+country_gdp_data <- read.csv(country_data_file)
+
+country_le_file <- file.path(input_dir, "le_52-67.csv")
+
+country_life_expect <- read.csv(country_le_file)
+
+```
+
+```{r}
+## Combining the Data ##
+country_data <- country_gdp_data %>% 
+  left_join(country_life_expect, by = c("country", "year"))
+
+table_data <- country_data %>%
+  select(continent.x, country, year, lifeExp, pop, gdp)
+
+final_table <- table_data %>%
+  rename(continent = continent.x)
+
+head(final_table)
+```
+```{r}
+## Calculating and Adding GDP Per Capita ##
+
+final_table <- final_table %>%
+  mutate(gdp_per_capita = (gdp / pop))
+
+head(final_table)
+```
+```{r}
+### VISUALIZATION ###
+canada_data <- final_table %>%
+  filter(country == "Canada")
+
+# Visualize life expectancy over time in Canada #
+ggplot(canada_data, aes(x = year, y = lifeExp)) +
+  geom_line() +
+  labs(x = "Year", y = "Life Expectancy in Canada") + 
+  ggtitle("Life Expectancy in Canada Over Time")
+
+# Visualize GDP Per Capita over Time in Canada #
+
+ggplot(canada_data, aes(x = year, y = gdp_per_capita)) +
+  geom_line() +
+  labs(x = "Year", y = "GDP Per Capita in Canada") +
+  ggtitle("GDP Per Capita in Canada Over Time")
+
+```
+```{r}
+## Creating the Regression Model ##
+
+life_exp_and_gdp <- lm(lifeExp ~ gdp_per_capita, data = canada_data)
+
+summary(life_exp_and_gdp)
+
+```
+
+
+
+
+
+
+
+
